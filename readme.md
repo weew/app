@@ -36,3 +36,12 @@ $app->getKernel();
 // get event bus
 $app->getEventer();
 ```
+
+## Extensions
+
+There are several extensions available:
+
+- [weew/php-app-error-handler](https://github.com/weew/php-app-error-handler)
+- [weew/php-app-http](https://github.com/weew/php-app-http)
+- [weew/php-app-http-request-handler](https://github.com/weew/php-app-http-request-handler)
+
