@@ -21,7 +21,6 @@
     "require": {
         "weew/php-helpers-string": "^1.1",
         "weew/php-helpers-array": "^1.0",
-        "weew/php-http": "^1.1",
         "weew/php-contracts": "^1.1",
         "weew/php-container": "^1.0",
         "weew/php-kernel-container-aware": "^1.2",
