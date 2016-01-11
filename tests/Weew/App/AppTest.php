@@ -3,7 +3,7 @@
 namespace Tests\Weew\App;
 
 use PHPUnit_Framework_TestCase;
-use Tests\Weew\App\Util\EventerTester;
+use Weew\App\Util\EventerTester;
 use Weew\Container\IContainer;
 use Weew\Eventer\IEventer;
 use Weew\App\App;
