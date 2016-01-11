@@ -1,18 +1,18 @@
 <?php
 
-namespace Weew\App\Events\Kernel;
+namespace Weew\App\Events;
 
 use Weew\Eventer\Event;
 use Weew\Kernel\IKernel;
 
-class KernelShutdownEvent extends Event {
+class KernelBootedEvent extends Event {
     /**
      * @var IKernel
      */
     private $kernel;
 
     /**
-     * KernelShutdownEvent constructor.
+     * KernelBootedEvent constructor.
      *
      * @param IKernel $kernel
      */
@@ -20,9 +20,6 @@ class KernelShutdownEvent extends Event {
         $this->kernel = $kernel;
     }
 
-    /**
-     * @return IKernel
-     */
     public function getKernel() {
         return $this->kernel;
     }

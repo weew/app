@@ -1,9 +1,9 @@
 <?php
 
-namespace Weew\App\Events\App;
+namespace Weew\App\Events;
 
-use Weew\Eventer\Event;
 use Weew\App\IApp;
+use Weew\Eventer\Event;
 
 class AppStartedEvent extends Event {
     /**

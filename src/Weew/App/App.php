@@ -2,16 +2,20 @@
 
 namespace Weew\App;
 
+use Weew\App\Events\ConfigLoadedEvent;
+use Weew\App\Events\KernelBootedEvent;
+use Weew\App\Events\KernelInitializedEvent;
+use Weew\App\Events\KernelShutdownEvent;
+use Weew\App\Exceptions\ConfigNotLoadedException;
+use Weew\Config\Config;
+use Weew\Config\ConfigLoader;
+use Weew\Config\IConfig;
+use Weew\Config\IConfigLoader;
 use Weew\Container\Container;
 use Weew\Container\IContainer;
 use Weew\Eventer\ContainerAware\Eventer as ContainerAwareEventer;
 use Weew\Eventer\Eventer;
 use Weew\Eventer\IEventer;
-use Weew\App\Events\App\AppShutdownEvent;
-use Weew\App\Events\App\AppStartedEvent;
-use Weew\App\Events\Kernel\KernelBootedEvent;
-use Weew\App\Events\Kernel\KernelInitializedEvent;
-use Weew\App\Events\Kernel\KernelShutdownEvent;
 use Weew\Kernel\ContainerAware\Kernel as ContainerAwareKernel;
 use Weew\Kernel\IKernel;
 use Weew\Kernel\Kernel;
@@ -33,10 +37,25 @@ class App implements IApp {
     protected $eventer;
 
     /**
+     * @var IConfigLoader
+     */
+    protected $configLoader;
+
+    /**
+     * @var IConfig
+     */
+    protected $config;
+
+    /**
      * App constructor.
      */
     public function __construct() {
-        $this->createEssentialComponents();
+        $this->container = $this->createContainer();
+        $this->kernel = $this->createKernel();
+        $this->eventer = $this->createEventer();
+        $this->configLoader = $this->createConfigLoader();
+
+        $this->container->set([App::class, IApp::class], $this);
     }
 
     /**
@@ -67,6 +86,28 @@ class App implements IApp {
     }
 
     /**
+     * @return IConfigLoader
+     */
+    public function getConfigLoader() {
+        return $this->configLoader;
+    }
+
+    /**
+     * @return IConfig
+     * @throws ConfigNotLoadedException
+     */
+    public function getConfig() {
+        if ($this->config === null) {
+            throw new ConfigNotLoadedException(
+                'Config has not been loaded yet. ' .
+                'Config is loaded after the application startup.'
+            );
+        }
+
+        return $this->config;
+    }
+
+    /**
      * Dry run - start and shutdown app.
      * This method is not meant to be used as
      * the main entry point in to the App.
@@ -80,13 +121,9 @@ class App implements IApp {
      * Start App.
      */
     protected function start() {
-        $this->kernel->initialize();
-        $this->eventer->dispatch(new KernelInitializedEvent($this->kernel));
-
-        $this->kernel->boot();
-        $this->eventer->dispatch(new KernelBootedEvent($this->kernel));
-
-        $this->eventer->dispatch(new AppStartedEvent($this));
+        $this->loadConfig();
+        $this->startKernel();
+        $this->eventer->dispatch(new Events\AppStartedEvent($this));
     }
 
     /**
@@ -95,18 +132,27 @@ class App implements IApp {
     protected function shutdown() {
         $this->kernel->shutdown();
         $this->eventer->dispatch(new KernelShutdownEvent($this->kernel));
-        $this->eventer->dispatch(new AppShutdownEvent($this));
+        $this->eventer->dispatch(new Events\AppShutdownEvent($this));
     }
 
     /**
-     * Create essential components.
+     * Load configuration.
      */
-    protected function createEssentialComponents() {
-        $this->container = $this->createContainer();
-        $this->kernel = $this->createKernel();
-        $this->eventer = $this->createEventer();
+    protected function loadConfig() {
+        $this->config = $this->configLoader->load();
+        $this->container->set([Config::class, IConfig::class], $this->config);
+        $this->eventer->dispatch(new ConfigLoadedEvent($this->config));
+    }
 
-        $this->container->set([App::class, IApp::class], $this);
+    /**
+     * Initialize and boot kernel.
+     */
+    protected function startKernel() {
+        $this->kernel->initialize();
+        $this->eventer->dispatch(new KernelInitializedEvent($this->kernel));
+
+        $this->kernel->boot();
+        $this->eventer->dispatch(new KernelBootedEvent($this->kernel));
     }
 
     /**
@@ -134,5 +180,15 @@ class App implements IApp {
         $this->container->set([Eventer::class, IEventer::class], $eventer);
 
         return $eventer;
+    }
+
+    /**
+     * @return IConfigLoader
+     */
+    protected function createConfigLoader() {
+        $configLoader = $this->container->get(ConfigLoader::class);
+        $this->container->set([ConfigLoader::class, IConfigLoader::class], $configLoader);
+
+        return $configLoader;
     }
 }

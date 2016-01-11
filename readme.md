@@ -35,6 +35,12 @@ $app->getKernel();
 
 // get event bus
 $app->getEventer();
+
+// get config loaded
+$app->getConfigLoader();
+
+// config is available after the app startup
+$app->getConfig();
 ```
 
 ## Extensions

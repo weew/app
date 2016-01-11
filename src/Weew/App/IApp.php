@@ -2,6 +2,8 @@
 
 namespace Weew\App;
 
+use Weew\Config\IConfig;
+use Weew\Config\IConfigLoader;
 use Weew\Container\IContainer;
 use Weew\Eventer\IEventer;
 use Weew\Kernel\IKernel;
@@ -32,4 +34,14 @@ interface IApp {
      * @return IEventer
      */
     function getEventer();
+
+    /**
+     * @return IConfigLoader
+     */
+    function getConfigLoader();
+
+    /**
+     * @return IConfig
+     */
+    function getConfig();
 }

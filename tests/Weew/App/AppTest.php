@@ -3,15 +3,19 @@
 namespace Tests\Weew\App;
 
 use PHPUnit_Framework_TestCase;
+use Weew\App\App;
+use Weew\App\Events\AppShutdownEvent;
+use Weew\App\Events\AppStartedEvent;
+use Weew\App\Events\ConfigLoadedEvent;
+use Weew\App\Events\KernelBootedEvent;
+use Weew\App\Events\KernelInitializedEvent;
+use Weew\App\Events\KernelShutdownEvent;
+use Weew\App\Exceptions\ConfigNotLoadedException;
 use Weew\App\Util\EventerTester;
+use Weew\Config\IConfig;
+use Weew\Config\IConfigLoader;
 use Weew\Container\IContainer;
 use Weew\Eventer\IEventer;
-use Weew\App\App;
-use Weew\App\Events\App\AppShutdownEvent;
-use Weew\App\Events\App\AppStartedEvent;
-use Weew\App\Events\Kernel\KernelBootedEvent;
-use Weew\App\Events\Kernel\KernelInitializedEvent;
-use Weew\App\Events\Kernel\KernelShutdownEvent;
 use Weew\Kernel\IKernel;
 
 class AppTest extends PHPUnit_Framework_TestCase {
@@ -26,7 +30,11 @@ class AppTest extends PHPUnit_Framework_TestCase {
 
     public function test_get_kernel() {
         $app = new App();
-        $this->assertTrue($app->getKernel() instanceof IKernel);
+        $kernel = $app->getKernel();
+
+        $this->assertTrue($kernel instanceof IKernel);
+        $sameKernel = $app->getContainer()->get(IKernel::class);
+        $this->assertTrue($kernel === $sameKernel);
     }
 
     public function test_get_eventer() {
@@ -34,11 +42,34 @@ class AppTest extends PHPUnit_Framework_TestCase {
         $this->assertTrue($app->getEventer() instanceof IEventer);
     }
 
+    public function test_get_config_loader() {
+        $app = new App();
+        $this->assertTrue($app->getConfigLoader() instanceof IConfigLoader);
+    }
+
+    public function test_config_loaded() {
+        $app = new App();
+        $app->run();
+        $config = $app->getConfig();
+
+        $this->assertTrue($config instanceof  IConfig);
+
+        $sameConfig = $app->getContainer()->get(IConfig::class);
+        $this->assertTrue($config === $sameConfig);
+    }
+
+    public function test_get_config_before_app_was_started_throws_exception() {
+        $app = new App();
+        $this->setExpectedException(ConfigNotLoadedException::class);
+        $app->getConfig();
+    }
+
     public function test_start_and_shutdown_events() {
         $app = new App();
 
         $tester = new EventerTester($app->getEventer());
         $tester->setExpectedEvents([
+            ConfigLoadedEvent::class,
             KernelInitializedEvent::class,
             KernelBootedEvent::class,
             AppStartedEvent::class,
