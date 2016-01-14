@@ -108,6 +108,18 @@ class App implements IApp {
     }
 
     /**
+     * Load configuration.
+     */
+    public function loadConfig() {
+        if ( ! $this->config instanceof IConfig) {
+            $this->config = $this->configLoader->load();
+            $this->container->set([Config::class, IConfig::class], $this->config);
+        }
+
+        $this->eventer->dispatch(new ConfigLoadedEvent($this->config));
+    }
+
+    /**
      * Dry run - start and shutdown app.
      * This method is not meant to be used as
      * the main entry point in to the App.
@@ -133,15 +145,6 @@ class App implements IApp {
         $this->kernel->shutdown();
         $this->eventer->dispatch(new KernelShutdownEvent($this->kernel));
         $this->eventer->dispatch(new Events\AppShutdownEvent($this));
-    }
-
-    /**
-     * Load configuration.
-     */
-    protected function loadConfig() {
-        $this->config = $this->configLoader->load();
-        $this->container->set([Config::class, IConfig::class], $this->config);
-        $this->eventer->dispatch(new ConfigLoadedEvent($this->config));
     }
 
     /**

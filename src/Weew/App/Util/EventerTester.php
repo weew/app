@@ -34,6 +34,7 @@ class EventerTester {
      * @param array $events
      */
     public function setExpectedEvents(array $events) {
+        $this->occurredEvents = [];
         $this->expectedEvents = $events;
         $occurredEvents = &$this->occurredEvents;
 

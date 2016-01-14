@@ -64,6 +64,21 @@ class AppTest extends PHPUnit_Framework_TestCase {
         $app->getConfig();
     }
 
+    public function test_load_config_before_app_is_started() {
+        $app = new App();
+        $tester = new EventerTester($app->getEventer());
+        $tester->setExpectedEvents([ConfigLoadedEvent::class]);
+        $app->loadConfig();
+
+        $tester->assert();
+
+        $tester = new EventerTester($app->getEventer());
+        $tester->setExpectedEvents([ConfigLoadedEvent::class]);
+        $app->run();
+
+        $tester->assert();
+    }
+
     public function test_start_and_shutdown_events() {
         $app = new App();
 
