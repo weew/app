@@ -134,7 +134,7 @@ class App implements IApp {
     /**
      * Start App.
      */
-    protected function start() {
+    public function start() {
         $this->loadConfig();
         $this->startKernel();
         $this->eventer->dispatch(new Events\AppStartedEvent($this));
@@ -143,7 +143,7 @@ class App implements IApp {
     /**
      * Shutdown App.
      */
-    protected function shutdown() {
+    public function shutdown() {
         $this->kernel->shutdown();
         $this->eventer->dispatch(new KernelShutdownEvent($this->kernel));
         $this->eventer->dispatch(new Events\AppShutdownEvent($this));

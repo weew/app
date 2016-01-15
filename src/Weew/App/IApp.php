@@ -15,6 +15,16 @@ interface IApp {
     function run();
 
     /**
+     * @return mixed
+     */
+    function start();
+
+    /**
+     * @return mixed
+     */
+    function shutdown();
+
+    /**
      * Get dependency injection container instance.
      *
      * @return IContainer
