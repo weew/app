@@ -46,7 +46,7 @@ interface IApp {
     function getConfig();
 
     /**
-     * @return mixed
+     * @return IConfig
      */
     function loadConfig();
 }

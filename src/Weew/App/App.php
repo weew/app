@@ -108,7 +108,7 @@ class App implements IApp {
     }
 
     /**
-     * Load configuration.
+     * @return IConfig
      */
     public function loadConfig() {
         if ( ! $this->config instanceof IConfig) {
@@ -117,6 +117,8 @@ class App implements IApp {
         }
 
         $this->eventer->dispatch(new ConfigLoadedEvent($this->config));
+
+        return $this->config;
     }
 
     /**

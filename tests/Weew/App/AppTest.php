@@ -58,6 +58,11 @@ class AppTest extends PHPUnit_Framework_TestCase {
         $this->assertTrue($config === $sameConfig);
     }
 
+    public function test_load_config_returns_config() {
+        $app = new App();
+        $this->assertTrue($app->loadConfig() instanceof IConfig);
+    }
+
     public function test_get_config_before_app_was_started_throws_exception() {
         $app = new App();
         $this->setExpectedException(ConfigNotLoadedException::class);
