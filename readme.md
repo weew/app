@@ -18,7 +18,9 @@
 
 ## Introduction
 
-This package is meant to be used as a bearbone for any php applications. It uses the [weew/php-container](https://github.com/weew/php-container) package for dependency injection, [weew/php-kernel](https://github.com/weew/php-kernel) as a kernel where you can register your providers and the [weew/php-eventer](https://github.com/weew/php-eventer) package for event handing.
+This package is meant to be used as a bearbone for any php applications. It uses the [weew/php-container](https://github.com/weew/php-container) package for dependency injection, [weew/php-kernel](https://github.com/weew/php-kernel) as a kernel where you can register your providers and the [weew/php-eventer](https://github.com/weew/php-eventer) package for event handing. Configuration is handled by the [weew/php-config](https://github.com/weew/php-config) package.
+
+Please read documentation of different components to see how they work.
 
 ## Usage
 
@@ -50,4 +52,5 @@ There are several extensions available:
 - [weew/php-app-error-handler](https://github.com/weew/php-app-error-handler)
 - [weew/php-app-http](https://github.com/weew/php-app-http)
 - [weew/php-app-http-request-handler](https://github.com/weew/php-app-http-request-handler)
+- [weew/php-app-doctrine](https://github.com/weew/php-app-doctrine)
 
