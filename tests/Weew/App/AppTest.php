@@ -100,4 +100,28 @@ class AppTest extends PHPUnit_Framework_TestCase {
         $app->run();
         $tester->assert();
     }
+
+    public function test_prevents_multiple_starts_and_shutdowns() {
+        $app = new App();
+
+        $tester = new EventerTester($app->getEventer());
+        $tester->setExpectedEvents([
+            ConfigLoadedEvent::class,
+            KernelInitializedEvent::class,
+            KernelBootedEvent::class,
+            AppStartedEvent::class,
+            KernelShutdownEvent::class,
+            AppShutdownEvent::class,
+        ]);
+
+        $app->start();
+        $app->start();
+        $app->start();
+
+        $app->shutdown();
+        $app->shutdown();
+        $app->shutdown();
+
+        $tester->assert();
+    }
 }

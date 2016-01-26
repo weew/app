@@ -2,6 +2,8 @@
 
 namespace Weew\App;
 
+use Weew\App\Events\AppShutdownEvent;
+use Weew\App\Events\AppStartedEvent;
 use Weew\App\Events\ConfigLoadedEvent;
 use Weew\App\Events\KernelBootedEvent;
 use Weew\App\Events\KernelInitializedEvent;
@@ -45,6 +47,11 @@ class App implements IApp {
      * @var IConfig
      */
     protected $config;
+
+    /**
+     * @var bool
+     */
+    protected $started = false;
 
     /**
      * App constructor.
@@ -135,18 +142,30 @@ class App implements IApp {
      * Start App.
      */
     public function start() {
+        if ($this->started) {
+            return;
+        }
+
+        $this->started = true;
+
         $this->loadConfig();
         $this->startKernel();
-        $this->eventer->dispatch(new Events\AppStartedEvent($this));
+        $this->eventer->dispatch(new AppStartedEvent($this));
     }
 
     /**
      * Shutdown App.
      */
     public function shutdown() {
+        if ( ! $this->started) {
+            return;
+        }
+
+        $this->started = false;
+
         $this->kernel->shutdown();
         $this->eventer->dispatch(new KernelShutdownEvent($this->kernel));
-        $this->eventer->dispatch(new Events\AppShutdownEvent($this));
+        $this->eventer->dispatch(new AppShutdownEvent($this));
     }
 
     /**
