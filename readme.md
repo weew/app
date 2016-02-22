@@ -11,6 +11,7 @@
 - [Installation](#installation)
 - [Introduction](#introduction)
 - [Usage](#usage)
+- [Extensions](#extensions)
 
 ## Installation
 
