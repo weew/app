@@ -19,7 +19,7 @@
 
 ## Introduction
 
-This package is meant to be used as a bearbone for any php applications. It uses the [weew/php-container](https://github.com/weew/php-container) package for dependency injection, [weew/php-kernel](https://github.com/weew/php-kernel) as a kernel where you can register your providers and the [weew/php-eventer](https://github.com/weew/php-eventer) package for event handing. Configuration is handled by the [weew/php-config](https://github.com/weew/php-config) package.
+This package is meant to be used as a barebone for any php applications. It uses the [weew/php-container](https://github.com/weew/php-container) package for dependency injection, [weew/php-kernel](https://github.com/weew/php-kernel) as a kernel where you can register your providers, the [weew/php-eventer](https://github.com/weew/php-eventer) package for event handing and the [weew/php-commander](https://github.com/weew/php-commander) package as the command bus. Configuration is handled by the [weew/php-config](https://github.com/weew/php-config) package.
 
 Please read documentation of different components to see how they work.
 
@@ -38,6 +38,9 @@ $app->getKernel();
 
 // get event bus
 $app->getEventer();
+
+// get command bus
+$app->getCommander();
 
 // get config loaded
 $app->getConfigLoader();

@@ -2,6 +2,7 @@
 
 namespace Weew\App;
 
+use Weew\Commander\ICommander;
 use Weew\Config\IConfig;
 use Weew\Config\IConfigLoader;
 use Weew\Container\IContainer;
@@ -44,6 +45,11 @@ interface IApp {
      * @return IEventer
      */
     function getEventer();
+
+    /**
+     * @return ICommander
+     */
+    function getCommander();
 
     /**
      * @return IConfigLoader

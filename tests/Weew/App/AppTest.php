@@ -12,6 +12,7 @@ use Weew\App\Events\KernelInitializedEvent;
 use Weew\App\Events\KernelShutdownEvent;
 use Weew\App\Exceptions\ConfigNotLoadedException;
 use Weew\App\Util\EventerTester;
+use Weew\Commander\ICommander;
 use Weew\Config\IConfig;
 use Weew\Config\IConfigLoader;
 use Weew\Container\IContainer;
@@ -39,7 +40,20 @@ class AppTest extends PHPUnit_Framework_TestCase {
 
     public function test_get_eventer() {
         $app = new App();
-        $this->assertTrue($app->getEventer() instanceof IEventer);
+        $eventer = $app->getEventer();
+
+        $this->assertTrue($eventer instanceof IEventer);
+        $sameEventer = $app->getContainer()->get(IEventer::class);
+        $this->assertTrue($eventer === $sameEventer);
+    }
+
+    public function test_get_and_commander() {
+        $app = new App();
+        $commander = $app->getCommander();
+
+        $this->assertTrue($commander instanceof ICommander);
+        $sameCommander = $app->getContainer()->get(ICommander::class);
+        $this->assertTrue($commander === $sameCommander);
     }
 
     public function test_get_config_loader() {
@@ -52,7 +66,7 @@ class AppTest extends PHPUnit_Framework_TestCase {
         $app->run();
         $config = $app->getConfig();
 
-        $this->assertTrue($config instanceof  IConfig);
+        $this->assertTrue($config instanceof IConfig);
 
         $sameConfig = $app->getContainer()->get(IConfig::class);
         $this->assertTrue($config === $sameConfig);

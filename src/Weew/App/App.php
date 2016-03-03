@@ -9,6 +9,8 @@ use Weew\App\Events\KernelBootedEvent;
 use Weew\App\Events\KernelInitializedEvent;
 use Weew\App\Events\KernelShutdownEvent;
 use Weew\App\Exceptions\ConfigNotLoadedException;
+use Weew\Commander\ContainerAware\Commander;
+use Weew\Commander\ICommander;
 use Weew\Config\Config;
 use Weew\Config\ConfigLoader;
 use Weew\Config\IConfig;
@@ -39,6 +41,11 @@ class App implements IApp {
     protected $eventer;
 
     /**
+     * @var ICommander
+     */
+    protected $commander;
+
+    /**
      * @var IConfigLoader
      */
     protected $configLoader;
@@ -60,6 +67,7 @@ class App implements IApp {
         $this->container = $this->createContainer();
         $this->kernel = $this->createKernel();
         $this->eventer = $this->createEventer();
+        $this->commander = $this->createCommander();
         $this->configLoader = $this->createConfigLoader();
 
         $this->container->set([App::class, IApp::class], $this);
@@ -90,6 +98,13 @@ class App implements IApp {
      */
     public function getEventer() {
         return $this->eventer;
+    }
+
+    /**
+     * @return ICommander
+     */
+    public function getCommander() {
+        return $this->commander;
     }
 
     /**
@@ -207,11 +222,20 @@ class App implements IApp {
     }
 
     /**
+     * @return ICommander
+     */
+    protected function createCommander() {
+        $commander = $this->container->get(Commander::class);
+        $this->container->set([Commander::class, ICommander::class], $commander);
+
+        return $commander;
+    }
+
+    /**
      * @return IConfigLoader
      */
     protected function createConfigLoader() {
         $configLoader = $this->container->get(ConfigLoader::class);
-        $this->container->set([ConfigLoader::class, IConfigLoader::class], $configLoader);
 
         return $configLoader;
     }
