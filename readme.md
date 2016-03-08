@@ -53,10 +53,11 @@ $app->getConfig();
 
 There are several extensions available:
 
+- [weew/php-app-doctrine](https://github.com/weew/php-app-doctrine)
+- [weew/php-app-monolog](https://github.com/weew/php-app-monolog)
+- [weew/php-app-http](https://github.com/weew/php-app-http)
+- [weew/php-app-http-request-handler](https://github.com/weew/php-app-http-request-handler)
 - [weew/php-app-error-handler](https://github.com/weew/php-app-error-handler)
 - [weew/php-app-error-handler-bugsnag](https://github.com/weew/php-app-error-handler-bugsnag)
 - [weew/php-app-error-handler-monolog](https://github.com/weew/php-app-error-handler-monolog)
-- [weew/php-app-http](https://github.com/weew/php-app-http)
-- [weew/php-app-http-request-handler](https://github.com/weew/php-app-http-request-handler)
-- [weew/php-app-doctrine](https://github.com/weew/php-app-doctrine)
 
