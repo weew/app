@@ -23,7 +23,7 @@
         "weew/php-helpers-array": "^1.0",
         "weew/php-contracts": "^1.1",
         "weew/php-container": "^1.0",
-        "weew/php-kernel-container-aware": "^1.2",
+        "weew/php-kernel-container-aware": "^2.0",
         "weew/php-eventer-container-aware": "^2.0",
         "weew/php-commander-container-aware": "^2.0",
         "weew/php-config": "^1.1"
