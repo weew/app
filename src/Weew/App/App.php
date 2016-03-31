@@ -132,27 +132,21 @@ class App implements IApp {
      * @return IConfig
      */
     public function loadConfig($config) {
-        if (is_array($config)) {
-            // load config from on an array of config paths
-            if (array_is_indexed($config)) {
-                $configLoader = $this->createConfigLoader();
-                $configLoader->addPaths($config);
-                $newConfig = $configLoader->load();
-
-                $this->config->extend($newConfig);
-            }
-            // load config from an array of key => values
-            else {
-                $this->config->merge($config);
-            }
+        // load config from on an array of config paths
+        if (is_array($config) && array_is_indexed($config)) {
+            $configLoader = $this->createConfigLoader();
+            $configLoader->addPaths($config);
+            $config = $configLoader->load();
         }
         // load config from a config path
         else if (is_string($config)) {
             $configLoader = $this->createConfigLoader();
             $configLoader->addPath($config);
-            $newConfig = $configLoader->load();
+            $config = $configLoader->load();
+        }
 
-            $this->config->extend($newConfig);
+        if (is_array($config)) {
+            $this->config->merge($config);
         } else if ($config instanceof IConfig) {
             $this->config->extend($config);
         }
