@@ -4,7 +4,6 @@ namespace Weew\App;
 
 use Weew\Commander\ICommander;
 use Weew\Config\IConfig;
-use Weew\Config\IConfigLoader;
 use Weew\Container\IContainer;
 use Weew\Eventer\IEventer;
 use Weew\Kernel\IKernel;
@@ -52,17 +51,27 @@ interface IApp {
     function getCommander();
 
     /**
-     * @return IConfigLoader
-     */
-    function getConfigLoader();
-
-    /**
      * @return IConfig
      */
     function getConfig();
 
     /**
+     * Load config or extend currently loaded config with
+     * new one, based on a config array, IConfig or a config path.
+     *
+     * @param array|string|IConfig $config
+     *
      * @return IConfig
      */
-    function loadConfig();
+    function loadConfig($config);
+
+    /**
+     * @return string
+     */
+    function getEnvironment();
+
+    /**
+     * @param string $environment
+     */
+    function setEnvironment($environment);
 }

@@ -4,7 +4,6 @@ namespace Tests\Weew\App\Util;
 
 use PHPUnit_Framework_ExpectationFailedException;
 use PHPUnit_Framework_TestCase;
-use Weew\App\Util\EventerTester;
 use Weew\Eventer\Eventer;
 
 class EventerTesterTest extends PHPUnit_Framework_TestCase {

@@ -10,23 +10,43 @@ use Weew\App\Events\ConfigLoadedEvent;
 use Weew\App\Events\KernelBootedEvent;
 use Weew\App\Events\KernelInitializedEvent;
 use Weew\App\Events\KernelShutdownEvent;
-use Weew\App\Exceptions\ConfigNotLoadedException;
-use Weew\App\Util\EventerTester;
+use Tests\Weew\App\Util\EventerTester;
+use Weew\Commander\Commander;
 use Weew\Commander\ICommander;
+use Weew\Config\Config;
 use Weew\Config\IConfig;
-use Weew\Config\IConfigLoader;
 use Weew\Container\IContainer;
+use Weew\Eventer\Eventer;
 use Weew\Eventer\IEventer;
 use Weew\Kernel\IKernel;
+use Weew\Kernel\Kernel;
 
 class AppTest extends PHPUnit_Framework_TestCase {
     public function test_create() {
-        new App();
+        $app = new App();
+        $this->assertEquals('prod', $app->getEnvironment());
+    }
+
+    public function test_get_and_set_environment() {
+        $app = new App('test');
+        $this->assertEquals('test', $app->getEnvironment());
+        $app->setEnvironment('dev');
+        $this->assertEquals('dev', $app->getEnvironment());
     }
 
     public function test_get_container() {
         $app = new App();
         $this->assertTrue($app->getContainer() instanceof IContainer);
+    }
+
+    public function test_get_config() {
+        $app = new App();
+        $config = $app->getConfig();
+        $this->assertTrue($config instanceof IConfig);
+        $sameConfig = $app->getContainer()->get(IConfig::class);
+        $this->assertTrue($sameConfig === $config);
+        $sameConfig = $app->getContainer()->get(Config::class);
+        $this->assertTrue($sameConfig === $config);
     }
 
     public function test_get_kernel() {
@@ -35,6 +55,8 @@ class AppTest extends PHPUnit_Framework_TestCase {
 
         $this->assertTrue($kernel instanceof IKernel);
         $sameKernel = $app->getContainer()->get(IKernel::class);
+        $this->assertTrue($kernel === $sameKernel);
+        $sameKernel = $app->getContainer()->get(Kernel::class);
         $this->assertTrue($kernel === $sameKernel);
     }
 
@@ -45,57 +67,59 @@ class AppTest extends PHPUnit_Framework_TestCase {
         $this->assertTrue($eventer instanceof IEventer);
         $sameEventer = $app->getContainer()->get(IEventer::class);
         $this->assertTrue($eventer === $sameEventer);
+        $sameEventer = $app->getContainer()->get(Eventer::class);
+        $this->assertTrue($eventer === $sameEventer);
     }
 
-    public function test_get_and_commander() {
+    public function test_get_commander() {
         $app = new App();
         $commander = $app->getCommander();
 
         $this->assertTrue($commander instanceof ICommander);
         $sameCommander = $app->getContainer()->get(ICommander::class);
         $this->assertTrue($commander === $sameCommander);
+        $sameCommander = $app->getContainer()->get(Commander::class);
+        $this->assertTrue($commander === $sameCommander);
     }
 
-    public function test_get_config_loader() {
+    public function test_load_config_from_path() {
         $app = new App();
-        $this->assertTrue($app->getConfigLoader() instanceof IConfigLoader);
-    }
-
-    public function test_config_loaded() {
-        $app = new App();
-        $app->run();
-        $config = $app->getConfig();
+        $app->getConfig()->set('key', 'value');
+        $config = $app->loadConfig(__DIR__ . '/config/config1.php');
 
         $this->assertTrue($config instanceof IConfig);
-
-        $sameConfig = $app->getContainer()->get(IConfig::class);
-        $this->assertTrue($config === $sameConfig);
+        $this->assertTrue($config === $app->getConfig());
+        $this->assertEquals(['key' => 'value', 'foo' => 'bar'], $config->toArray());
     }
 
-    public function test_load_config_returns_config() {
+    public function test_load_config_from_array_of_paths() {
         $app = new App();
-        $this->assertTrue($app->loadConfig() instanceof IConfig);
+        $app->getConfig()->set('key', 'value');
+        $config = $app->loadConfig(__DIR__ . '/config');
+
+        $this->assertTrue($config instanceof IConfig);
+        $this->assertTrue($config === $app->getConfig());
+        $this->assertEquals(['key' => 'value', 'foo' => 'bar', 'bar' => 'baz'], $config->toArray());
     }
 
-    public function test_get_config_before_app_was_started_throws_exception() {
+    public function test_load_config_from_array() {
         $app = new App();
-        $this->setExpectedException(ConfigNotLoadedException::class);
-        $app->getConfig();
+        $app->getConfig()->set('key', 'value');
+        $config = $app->loadConfig(['yolo' => 'swag']);
+
+        $this->assertTrue($config instanceof IConfig);
+        $this->assertTrue($config === $app->getConfig());
+        $this->assertEquals(['key' => 'value', 'yolo' => 'swag'], $config->toArray());
     }
 
-    public function test_load_config_before_app_is_started() {
+    public function test_load_config_from_another_config() {
         $app = new App();
-        $tester = new EventerTester($app->getEventer());
-        $tester->setExpectedEvents([ConfigLoadedEvent::class]);
-        $app->loadConfig();
+        $app->getConfig()->set('key', 'value');
+        $config = $app->loadConfig(new Config(['yolo' => 'swag']));
 
-        $tester->assert();
-
-        $tester = new EventerTester($app->getEventer());
-        $tester->setExpectedEvents([ConfigLoadedEvent::class]);
-        $app->run();
-
-        $tester->assert();
+        $this->assertTrue($config instanceof IConfig);
+        $this->assertTrue($config === $app->getConfig());
+        $this->assertEquals(['key' => 'value', 'yolo' => 'swag'], $config->toArray());
     }
 
     public function test_start_and_shutdown_events() {
@@ -111,6 +135,7 @@ class AppTest extends PHPUnit_Framework_TestCase {
             AppShutdownEvent::class,
         ]);
 
+        $app->loadConfig([]);
         $app->run();
         $tester->assert();
     }
@@ -127,6 +152,8 @@ class AppTest extends PHPUnit_Framework_TestCase {
             KernelShutdownEvent::class,
             AppShutdownEvent::class,
         ]);
+
+        $app->loadConfig([]);
 
         $app->start();
         $app->start();

@@ -1,6 +1,6 @@
 <?php
 
-namespace Weew\App\Util;
+namespace Tests\Weew\App\Util;
 
 use PHPUnit_Framework_ExpectationFailedException;
 use Weew\Eventer\IEventer;

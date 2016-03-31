@@ -8,8 +8,8 @@ use Weew\App\Events\ConfigLoadedEvent;
 use Weew\App\Events\KernelBootedEvent;
 use Weew\App\Events\KernelInitializedEvent;
 use Weew\App\Events\KernelShutdownEvent;
-use Weew\App\Exceptions\ConfigNotLoadedException;
-use Weew\Commander\ContainerAware\Commander;
+use Weew\Commander\Commander;
+use Weew\Commander\ContainerAware\Commander as ContainerAwareCommander;
 use Weew\Commander\ICommander;
 use Weew\Config\Config;
 use Weew\Config\ConfigLoader;
@@ -25,6 +25,16 @@ use Weew\Kernel\IKernel;
 use Weew\Kernel\Kernel;
 
 class App implements IApp {
+    /**
+     * @var bool
+     */
+    protected $started = false;
+
+    /**
+     * @var string
+     */
+    protected $environment;
+
     /**
      * @var IContainer
      */
@@ -46,31 +56,106 @@ class App implements IApp {
     protected $commander;
 
     /**
-     * @var IConfigLoader
-     */
-    protected $configLoader;
-
-    /**
      * @var IConfig
      */
     protected $config;
 
     /**
-     * @var bool
-     */
-    protected $started = false;
-
-    /**
      * App constructor.
+     *
+     * @param string $environment
      */
-    public function __construct() {
+    public function __construct($environment = 'prod') {
+        $this->setEnvironment($environment);
+
         $this->container = $this->createContainer();
         $this->kernel = $this->createKernel();
         $this->eventer = $this->createEventer();
         $this->commander = $this->createCommander();
-        $this->configLoader = $this->createConfigLoader();
+        $this->config = $this->createConfig();
 
         $this->container->set([App::class, IApp::class], $this);
+    }
+
+    /**
+     * Dry run - start and shutdown app.
+     * This method is not meant to be used as
+     * the main entry point in to the App.
+     */
+    public function run() {
+        $this->start();
+        $this->shutdown();
+    }
+
+    /**
+     * Start App.
+     */
+    public function start() {
+        if ($this->started) {
+            return;
+        }
+
+        $this->started = true;
+
+        $this->kernel->initialize();
+        $this->eventer->dispatch(new KernelInitializedEvent($this->kernel));
+        $this->kernel->boot();
+        $this->eventer->dispatch(new KernelBootedEvent($this->kernel));
+        $this->eventer->dispatch(new AppStartedEvent($this));
+    }
+
+    /**
+     * Shutdown App.
+     */
+    public function shutdown() {
+        if ( ! $this->started) {
+            return;
+        }
+
+        $this->started = false;
+
+        $this->kernel->shutdown();
+        $this->eventer->dispatch(new KernelShutdownEvent($this->kernel));
+        $this->eventer->dispatch(new AppShutdownEvent($this));
+    }
+
+    /**
+     * Load config or extend currently loaded config with
+     * new one, based on a config array, IConfig or a config path.
+     *
+     * @param array|string|IConfig $config
+     *
+     * @return IConfig
+     */
+    public function loadConfig($config) {
+        if (is_array($config)) {
+            // load config from on an array of config paths
+            if (array_is_indexed($config)) {
+                $configLoader = $this->createConfigLoader();
+                $configLoader->addPaths($config);
+                $newConfig = $configLoader->load();
+
+                $this->config->extend($newConfig);
+            }
+            // load config from an array of key => values
+            else {
+                $this->config->merge($config);
+            }
+        }
+        // load config from a config path
+        else if (is_string($config)) {
+            $configLoader = $this->createConfigLoader();
+            $configLoader->addPath($config);
+            $newConfig = $configLoader->load();
+
+            $this->config->extend($newConfig);
+        } else if ($config instanceof IConfig) {
+            $this->config->extend($config);
+        }
+
+        $this->eventer->dispatch(new ConfigLoadedEvent($this->config));
+
+        return $this->config;
     }
 
     /**
@@ -108,90 +193,24 @@ class App implements IApp {
     }
 
     /**
-     * @return IConfigLoader
-     */
-    public function getConfigLoader() {
-        return $this->configLoader;
-    }
-
-    /**
      * @return IConfig
-     * @throws ConfigNotLoadedException
      */
     public function getConfig() {
-        if ($this->config === null) {
-            throw new ConfigNotLoadedException(
-                'Config has not been loaded yet. ' .
-                'Config is loaded after the application startup.'
-            );
-        }
-
         return $this->config;
     }
 
     /**
-     * @return IConfig
+     * @return string
      */
-    public function loadConfig() {
-        if ( ! $this->config instanceof IConfig) {
-            $this->config = $this->configLoader->load();
-            $this->container->set([Config::class, IConfig::class], $this->config);
-        }
-
-        $this->eventer->dispatch(new ConfigLoadedEvent($this->config));
-
-        return $this->config;
+    public function getEnvironment() {
+        return $this->environment;
     }
 
     /**
-     * Dry run - start and shutdown app.
-     * This method is not meant to be used as
-     * the main entry point in to the App.
+     * @param string $environment
      */
-    public function run() {
-        $this->start();
-        $this->shutdown();
-    }
-
-    /**
-     * Start App.
-     */
-    public function start() {
-        if ($this->started) {
-            return;
-        }
-
-        $this->started = true;
-
-        $this->loadConfig();
-        $this->startKernel();
-        $this->eventer->dispatch(new AppStartedEvent($this));
-    }
-
-    /**
-     * Shutdown App.
-     */
-    public function shutdown() {
-        if ( ! $this->started) {
-            return;
-        }
-
-        $this->started = false;
-
-        $this->kernel->shutdown();
-        $this->eventer->dispatch(new KernelShutdownEvent($this->kernel));
-        $this->eventer->dispatch(new AppShutdownEvent($this));
-    }
-
-    /**
-     * Initialize and boot kernel.
-     */
-    protected function startKernel() {
-        $this->kernel->initialize();
-        $this->eventer->dispatch(new KernelInitializedEvent($this->kernel));
-
-        $this->kernel->boot();
-        $this->eventer->dispatch(new KernelBootedEvent($this->kernel));
+    public function setEnvironment($environment) {
+        $this->environment = $environment;
     }
 
     /**
@@ -225,7 +244,7 @@ class App implements IApp {
      * @return ICommander
      */
     protected function createCommander() {
-        $commander = $this->container->get(Commander::class);
+        $commander = new ContainerAwareCommander($this->container);
         $this->container->set([Commander::class, ICommander::class], $commander);
 
         return $commander;
@@ -235,8 +254,16 @@ class App implements IApp {
      * @return IConfigLoader
      */
     protected function createConfigLoader() {
-        $configLoader = $this->container->get(ConfigLoader::class);
+        return new ConfigLoader($this->getEnvironment());
+    }
 
-        return $configLoader;
+    /**
+     * @return Config
+     */
+    protected function createConfig() {
+        $config = new Config();
+        $this->container->set([Config::class, IConfig::class], $config);
+
+        return $config;
     }
 }

@@ -28,7 +28,12 @@ Please read documentation of different components to see how they work.
 Creating a new app is very simple:
 
 ```php
+$app = new App('environment');
+
+// or
+
 $app = new App();
+$app->setEnvironment('environment');
 
 // get depdency injection container
 $app->getContainer();
@@ -42,11 +47,20 @@ $app->getEventer();
 // get command bus
 $app->getCommander();
 
-// get config loaded
-$app->getConfigLoader();
-
-// config is available after the app startup
+// get config
 $app->getConfig();
+
+// load a config array into the application
+$app->loadConfig(['some' => 'config']);
+
+// load config from filesystem into the application
+$app->loadConfig('path/to/config');
+
+// load from multiple sources on the filesystem into the application
+$app->loadConfig(['path/to/config']);
+
+// load config from IConfig instance into the application
+$app->loadConfig(new Config());
 ```
 
 ## Extensions
