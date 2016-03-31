@@ -65,7 +65,11 @@ class App implements IApp {
      *
      * @param string $environment
      */
-    public function __construct($environment = 'prod') {
+    public function __construct($environment = null) {
+        if ($environment === null) {
+            $environment = $this->getDefaultEnvironment();
+        }
+
         $this->setEnvironment($environment);
 
         $this->container = $this->createContainer();
@@ -265,5 +269,12 @@ class App implements IApp {
         $this->container->set([Config::class, IConfig::class], $config);
 
         return $config;
+    }
+
+    /**
+     * @return string
+     */
+    protected function getDefaultEnvironment() {
+        return 'prod';
     }
 }
