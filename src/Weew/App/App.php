@@ -61,24 +61,34 @@ class App implements IApp {
     protected $config;
 
     /**
+     * @var IConfigLoader
+     */
+    protected $configLoader;
+
+    /**
+     * @var array
+     */
+    protected $configSources = [];
+
+    /**
      * App constructor.
      *
      * @param string $environment
      */
     public function __construct($environment = null) {
+        $this->container = $this->createContainer();
+        $this->kernel = $this->createKernel();
+        $this->eventer = $this->createEventer();
+        $this->commander = $this->createCommander();
+        $this->configLoader = $this->createConfigLoader();
+        $this->container->set([App::class, IApp::class], $this);
+
         if ($environment === null) {
             $environment = $this->getDefaultEnvironment();
         }
 
         $this->setEnvironment($environment);
-
-        $this->container = $this->createContainer();
-        $this->kernel = $this->createKernel();
-        $this->eventer = $this->createEventer();
-        $this->commander = $this->createCommander();
-        $this->config = $this->createConfig();
-
-        $this->container->set([App::class, IApp::class], $this);
+        $this->reloadConfig();
     }
 
     /**
@@ -132,15 +142,18 @@ class App implements IApp {
      * @return IConfig
      */
     public function loadConfig($config) {
+        $this->configSources[] = $config;
+
+        $configLoader = clone $this->getConfigLoader();
+        $configLoader->setPaths([]);
+
         // load config from on an array of config paths
         if (is_array($config) && array_is_indexed($config)) {
-            $configLoader = $this->createConfigLoader();
             $configLoader->addPaths($config);
             $config = $configLoader->load();
         }
         // load config from a config path
         else if (is_string($config)) {
-            $configLoader = $this->createConfigLoader();
             $configLoader->addPath($config);
             $config = $configLoader->load();
         }
@@ -205,10 +218,21 @@ class App implements IApp {
     }
 
     /**
+     * @return IConfigLoader
+     */
+    public function getConfigLoader() {
+        return $this->configLoader;
+    }
+
+    /**
      * @param string $environment
      */
     public function setEnvironment($environment) {
-        $this->environment = $environment;
+        if ($this->environment !== $environment) {
+            $this->environment = $environment;
+            $this->getConfigLoader()->setEnvironment($environment);
+            $this->reloadConfig();
+        }
     }
 
     /**
@@ -252,17 +276,7 @@ class App implements IApp {
      * @return IConfigLoader
      */
     protected function createConfigLoader() {
-        return new ConfigLoader($this->getEnvironment());
-    }
-
-    /**
-     * @return Config
-     */
-    protected function createConfig() {
-        $config = new Config();
-        $this->container->set([Config::class, IConfig::class], $config);
-
-        return $config;
+        return new ConfigLoader();
     }
 
     /**
@@ -270,5 +284,20 @@ class App implements IApp {
      */
     protected function getDefaultEnvironment() {
         return 'prod';
+    }
+
+    /**
+     * Reload configuration. All runtime config changes will be lost.
+     */
+    protected function reloadConfig() {
+        $this->config = new Config();
+        $configSources = $this->configSources;
+        $this->configSources = [];
+
+        foreach ($configSources as $source) {
+            $this->loadConfig($source);
+        }
+
+        $this->container->set([Config::class, IConfig::class], $this->config);
     }
 }

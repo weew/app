@@ -4,6 +4,7 @@ namespace Weew\App;
 
 use Weew\Commander\ICommander;
 use Weew\Config\IConfig;
+use Weew\Config\IConfigLoader;
 use Weew\Container\IContainer;
 use Weew\Eventer\IEventer;
 use Weew\Kernel\IKernel;
@@ -54,6 +55,11 @@ interface IApp {
      * @return IConfig
      */
     function getConfig();
+
+    /**
+     * @return IConfigLoader
+     */
+    function getConfigLoader();
 
     /**
      * Load config or extend currently loaded config with

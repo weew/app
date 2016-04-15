@@ -15,6 +15,7 @@ use Weew\Commander\Commander;
 use Weew\Commander\ICommander;
 use Weew\Config\Config;
 use Weew\Config\IConfig;
+use Weew\Config\IConfigLoader;
 use Weew\Container\IContainer;
 use Weew\Eventer\Eventer;
 use Weew\Eventer\IEventer;
@@ -84,12 +85,15 @@ class AppTest extends PHPUnit_Framework_TestCase {
 
     public function test_load_config_from_path() {
         $app = new App();
-        $app->getConfig()->set('key', 'value');
-        $config = $app->loadConfig(__DIR__ . '/config/config1.php');
+        $config = $app->getConfig();
+        $config->set('key', 'value');
+        $app->loadConfig(__DIR__ . '/config/config1.php');
+        $config = $app->loadConfig([__DIR__ . '/config/config2.php']);
 
         $this->assertTrue($config instanceof IConfig);
         $this->assertTrue($config === $app->getConfig());
-        $this->assertEquals(['key' => 'value', 'foo' => 'bar'], $config->toArray());
+        $this->assertTrue($app->getContainer()->get(IConfig::class) === $config);
+        $this->assertEquals(['key' => 'value', 'foo' => 'bar', 'bar' => 'baz'], $config->toArray());
     }
 
     public function test_load_config_from_array_of_paths() {
@@ -164,5 +168,51 @@ class AppTest extends PHPUnit_Framework_TestCase {
         $app->shutdown();
 
         $tester->assert();
+    }
+
+    public function test_environment_switch_leads_to_config_reload() {
+        $app = new App('dev');
+        $config = $app->getConfig();
+        $this->assertTrue($config instanceof IConfig);
+        $app->setEnvironment('dev');
+        $this->assertTrue($config === $app->getConfig());
+        $app->setEnvironment('prod');
+        $this->assertTrue($config !== $app->getConfig());
+        $config = $app->getConfig();
+        $this->assertTrue($config instanceof IConfig);
+    }
+
+    public function test_config_reload_reloads_config_sources() {
+        $app = new App();
+        $app->loadConfig(__DIR__ . '/config/config1.php');
+        $app->loadConfig([__DIR__ . '/config/config2.php']);
+        $config = $app->getConfig();
+        $config->set('key', 'value');
+        $this->assertEquals(['key' => 'value', 'foo' => 'bar', 'bar' => 'baz'], $config->toArray());
+        $app->setEnvironment('dev');
+        $this->assertFalse($config === $app->getConfig());
+        $config = $app->getConfig();
+        $this->assertTrue($app->getContainer()->get(IConfig::class) === $config);
+        $this->assertEquals(['foo' => 'bar', 'bar' => 'baz'], $config->toArray());
+    }
+
+    public function test_it_returns_config_loader() {
+        $app = new App();
+        $this->assertTrue($app->getConfigLoader() instanceof IConfigLoader);
+    }
+
+    public function test_config_loader_has_the_same_environment_as_app() {
+        $app = new App();
+        $configLoader = $app->getConfigLoader();
+        $this->assertEquals($app->getEnvironment(), $configLoader->getEnvironment());
+        $app->setEnvironment('env');
+        $this->assertEquals($app->getEnvironment(), $configLoader->getEnvironment());
+    }
+
+    public function test_it_reuses_the_same_config_loader() {
+        $app = new App();
+        $configLoader = $app->getConfigLoader();
+        $app->setEnvironment('env');
+        $this->assertTrue($app->getConfigLoader() === $configLoader);
     }
 }
