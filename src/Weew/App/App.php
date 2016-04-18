@@ -218,13 +218,6 @@ class App implements IApp {
     }
 
     /**
-     * @return IConfigLoader
-     */
-    public function getConfigLoader() {
-        return $this->configLoader;
-    }
-
-    /**
      * @param string $environment
      */
     public function setEnvironment($environment) {
@@ -233,6 +226,25 @@ class App implements IApp {
             $this->getConfigLoader()->setEnvironment($environment);
             $this->reloadConfig();
         }
+    }
+
+    /**
+     * Add additional configuration environment.
+     *
+     * @param string $name
+     * @param array $abbreviations
+     */
+    public function addEnvironment($name, array $abbreviations) {
+        $this->getConfigLoader()
+            ->getEnvironmentDetector()
+            ->addEnvironmentRule($name, $abbreviations);
+    }
+
+    /**
+     * @return IConfigLoader
+     */
+    public function getConfigLoader() {
+        return $this->configLoader;
     }
 
     /**

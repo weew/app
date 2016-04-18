@@ -215,4 +215,16 @@ class AppTest extends PHPUnit_Framework_TestCase {
         $app->setEnvironment('env');
         $this->assertTrue($app->getConfigLoader() === $configLoader);
     }
+
+    public function test_it_adds_custom_environments() {
+        $app = new App();
+        $this->assertNull(
+            $app->getConfigLoader()->getEnvironmentDetector()->detectEnvironment('foo_te')
+        );
+        $app->addEnvironment('test', ['te', 'st']);
+        $this->assertEquals(
+            'test',
+            $app->getConfigLoader()->getEnvironmentDetector()->detectEnvironment('foo_te')
+        );
+    }
 }
