@@ -66,29 +66,39 @@ class App implements IApp {
     protected $configLoader;
 
     /**
-     * @var array
-     */
-    protected $configSources = [];
-
-    /**
      * App constructor.
      *
      * @param string $environment
      */
     public function __construct($environment = null) {
-        $this->container = $this->createContainer();
-        $this->kernel = $this->createKernel();
-        $this->eventer = $this->createEventer();
-        $this->commander = $this->createCommander();
-        $this->configLoader = $this->createConfigLoader();
-        $this->container->set([App::class, IApp::class], $this);
-
         if ($environment === null) {
             $environment = $this->getDefaultEnvironment();
         }
 
-        $this->setEnvironment($environment);
-        $this->reloadConfig();
+        // config loader must be shared across
+        // reboots / environment switches
+        $this->configLoader = $this->createConfigLoader();
+
+        $this->init($environment);
+    }
+
+    /**
+     * This method is needed to be able to
+     * "recreate" application for a given environment.
+     *
+     * @param $environment
+     */
+    protected function init($environment) {
+        $this->container = $this->createContainer();
+        $this->kernel = $this->createKernel();
+        $this->eventer = $this->createEventer();
+        $this->commander = $this->createCommander();
+        $this->environment = $environment;
+
+        $this->container->set([App::class, IApp::class], $this);
+
+        $this->getConfigLoader()->setEnvironment($environment);
+        $this->initializeConfig();
     }
 
     /**
@@ -142,27 +152,29 @@ class App implements IApp {
      * @return IConfig
      */
     public function loadConfig($config) {
-        $this->configSources[] = $config;
-
-        $configLoader = clone $this->getConfigLoader();
-        $configLoader->setPaths([]);
-
-        // load config from on an array of config paths
-        if (is_array($config) && array_is_indexed($config)) {
-            $configLoader->addPaths($config);
-            $config = $configLoader->load();
-        }
-        // load config from a config path
-        else if (is_string($config)) {
-            $configLoader->addPath($config);
-            $config = $configLoader->load();
-        }
+        $configLoader = $this->getConfigLoader();
 
         if (is_array($config)) {
-            $this->config->merge($config);
-        } else if ($config instanceof IConfig) {
-            $this->config->extend($config);
+            // array of paths to config files
+            if (array_is_indexed($config)) {
+                $configLoader->addPaths($config);
+            }
+            // array of key value configs
+            else {
+                $configLoader->addRuntimeConfig($config);
+            }
         }
+        // path to config file
+        else if (is_string($config)) {
+            $configLoader->addPath($config);
+        }
+        // config object
+        else if ($config instanceof IConfig) {
+            $configLoader->addRuntimeConfig($config);
+        }
+
+        $config = $configLoader->load();
+        $this->config->extend($config);
 
         $this->eventer->dispatch(new ConfigLoadedEvent($this->config));
 
@@ -223,8 +235,7 @@ class App implements IApp {
     public function setEnvironment($environment) {
         if ($this->environment !== $environment) {
             $this->environment = $environment;
-            $this->getConfigLoader()->setEnvironment($environment);
-            $this->reloadConfig();
+            $this->init($environment);
         }
     }
 
@@ -301,14 +312,11 @@ class App implements IApp {
     /**
      * Reload configuration. All runtime config changes will be lost.
      */
-    protected function reloadConfig() {
-        $this->config = new Config();
-        $configSources = $this->configSources;
-        $this->configSources = [];
-
-        foreach ($configSources as $source) {
-            $this->loadConfig($source);
-        }
+    protected function initializeConfig() {
+        $this->config = $this->getConfigLoader()->load();
+        // application environment might change during the lifetime,
+        // make sure this change flows back into the config files
+        $this->config->set('env', $this->getConfigLoader()->getEnvironment());
 
         $this->container->set([Config::class, IConfig::class], $this->config);
     }

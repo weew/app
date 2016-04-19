@@ -93,7 +93,7 @@ class AppTest extends PHPUnit_Framework_TestCase {
         $this->assertTrue($config instanceof IConfig);
         $this->assertTrue($config === $app->getConfig());
         $this->assertTrue($app->getContainer()->get(IConfig::class) === $config);
-        $this->assertEquals(['key' => 'value', 'foo' => 'bar', 'bar' => 'baz'], $config->toArray());
+        $this->assertEquals(['key' => 'value', 'foo' => 'bar', 'bar' => 'baz', 'env' => 'prod'], $config->toArray());
     }
 
     public function test_load_config_from_array_of_paths() {
@@ -103,7 +103,7 @@ class AppTest extends PHPUnit_Framework_TestCase {
 
         $this->assertTrue($config instanceof IConfig);
         $this->assertTrue($config === $app->getConfig());
-        $this->assertEquals(['key' => 'value', 'foo' => 'bar', 'bar' => 'baz'], $config->toArray());
+        $this->assertEquals(['key' => 'value', 'foo' => 'bar', 'bar' => 'baz', 'env' => 'prod'], $config->toArray());
     }
 
     public function test_load_config_from_array() {
@@ -113,7 +113,7 @@ class AppTest extends PHPUnit_Framework_TestCase {
 
         $this->assertTrue($config instanceof IConfig);
         $this->assertTrue($config === $app->getConfig());
-        $this->assertEquals(['key' => 'value', 'yolo' => 'swag'], $config->toArray());
+        $this->assertEquals(['key' => 'value', 'yolo' => 'swag', 'env' => 'prod'], $config->toArray());
     }
 
     public function test_load_config_from_another_config() {
@@ -123,7 +123,7 @@ class AppTest extends PHPUnit_Framework_TestCase {
 
         $this->assertTrue($config instanceof IConfig);
         $this->assertTrue($config === $app->getConfig());
-        $this->assertEquals(['key' => 'value', 'yolo' => 'swag'], $config->toArray());
+        $this->assertEquals(['key' => 'value', 'yolo' => 'swag', 'env' => 'prod'], $config->toArray());
     }
 
     public function test_start_and_shutdown_events() {
@@ -170,6 +170,19 @@ class AppTest extends PHPUnit_Framework_TestCase {
         $tester->assert();
     }
 
+    public function test_switching_environment_get_propagated() {
+        $app = new App();
+        $this->assertEquals('prod', $app->getEnvironment());
+        $this->assertEquals('prod', $app->getConfigLoader()->getEnvironment());
+        $this->assertEquals('prod', $app->getConfig()->get('env'));
+
+        $app->setEnvironment('test');
+
+        $this->assertEquals('test', $app->getEnvironment());
+        $this->assertEquals('test', $app->getConfigLoader()->getEnvironment());
+        $this->assertEquals('test', $app->getConfig()->get('env'));
+    }
+
     public function test_environment_switch_leads_to_config_reload() {
         $app = new App('dev');
         $config = $app->getConfig();
@@ -188,12 +201,12 @@ class AppTest extends PHPUnit_Framework_TestCase {
         $app->loadConfig([__DIR__ . '/config/config2.php']);
         $config = $app->getConfig();
         $config->set('key', 'value');
-        $this->assertEquals(['key' => 'value', 'foo' => 'bar', 'bar' => 'baz'], $config->toArray());
+        $this->assertEquals(['key' => 'value', 'foo' => 'bar', 'bar' => 'baz', 'env' => 'prod'], $config->toArray());
         $app->setEnvironment('dev');
         $this->assertFalse($config === $app->getConfig());
         $config = $app->getConfig();
         $this->assertTrue($app->getContainer()->get(IConfig::class) === $config);
-        $this->assertEquals(['foo' => 'bar', 'bar' => 'baz'], $config->toArray());
+        $this->assertEquals(['foo' => 'bar', 'bar' => 'baz', 'env' => 'dev'], $config->toArray());
     }
 
     public function test_it_returns_config_loader() {
@@ -203,10 +216,9 @@ class AppTest extends PHPUnit_Framework_TestCase {
 
     public function test_config_loader_has_the_same_environment_as_app() {
         $app = new App();
-        $configLoader = $app->getConfigLoader();
-        $this->assertEquals($app->getEnvironment(), $configLoader->getEnvironment());
+        $this->assertEquals($app->getEnvironment(), $app->getConfigLoader()->getEnvironment());
         $app->setEnvironment('env');
-        $this->assertEquals($app->getEnvironment(), $configLoader->getEnvironment());
+        $this->assertEquals($app->getEnvironment(), $app->getConfigLoader()->getEnvironment());
     }
 
     public function test_it_reuses_the_same_config_loader() {
@@ -226,5 +238,12 @@ class AppTest extends PHPUnit_Framework_TestCase {
             'test',
             $app->getConfigLoader()->getEnvironmentDetector()->detectEnvironment('foo_te')
         );
+    }
+
+    public function test_it_reboots_after_env_switch() {
+        $app = new App('test');
+        $app->getContainer()->set('foo', 'bar');
+        $app->setEnvironment('prod');
+        $this->assertFalse($app->getContainer()->has('foo'));
     }
 }

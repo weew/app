@@ -46,7 +46,11 @@ $app->getEventer();
 
 // get command bus
 $app->getCommander();
+```
 
+There are several helper methods for dealing with configuration.
+
+```php
 // get config
 $app->getConfig();
 
@@ -61,6 +65,19 @@ $app->loadConfig(['path/to/config']);
 
 // load config from IConfig instance into the application
 $app->loadConfig(new Config());
+```
+
+Be aware that applications current `environment` will always be available inside the config object under the `env` key.
+
+```php
+// "prod" by default
+$app->getEnvironment();
+// also prod
+$app->getConfig()->get('env');
+
+$app->setEnvironment('test');
+// will be set to test
+$app->getConfig()->get('env');
 ```
 
 ## Extensions
