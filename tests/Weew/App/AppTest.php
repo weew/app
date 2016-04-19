@@ -247,4 +247,12 @@ class AppTest extends PHPUnit_Framework_TestCase {
         $app->setEnvironment('prod');
         $this->assertFalse($app->getContainer()->has('foo'));
     }
+
+    public function test_kernel_is_available_inside_the_container_after_app_reboot() {
+        $app = new App('test');
+        $kernel = $app->getContainer()->get(IKernel::class);
+        $app->start();
+        $app->setEnvironment('prod');
+        $this->assertTrue($app->getContainer()->get(IKernel::class) === $kernel);
+    }
 }

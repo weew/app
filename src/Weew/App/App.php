@@ -103,13 +103,16 @@ class App implements IApp {
         // this is not necessary on the first run, but is needed
         // after an environment switch or an application reboot
         $this->kernel->setContainer($this->container);
+        $this->container->set([Kernel::class, IKernel::class], $this->kernel);
 
         if ($this->started) {
             $this->shutdown();
         }
 
         $this->eventer = $this->createEventer();
+        $this->container->set([Eventer::class, IEventer::class], $this->eventer);
         $this->commander = $this->createCommander();
+        $this->container->set([Commander::class, ICommander::class], $this->commander);
         $this->environment = $environment;
 
         $this->container->set([App::class, IApp::class], $this);
@@ -286,30 +289,21 @@ class App implements IApp {
      * @return ContainerAwareKernel
      */
     protected function createKernel() {
-        $kernel = $this->container->get(ContainerAwareKernel::class);
-        $this->container->set([Kernel::class, IKernel::class], $kernel);
-
-        return $kernel;
+        return $this->container->get(ContainerAwareKernel::class);
     }
 
     /**
      * @return IEventer
      */
     protected function createEventer() {
-        $eventer = $this->container->get(ContainerAwareEventer::class);
-        $this->container->set([Eventer::class, IEventer::class], $eventer);
-
-        return $eventer;
+        return $this->container->get(ContainerAwareEventer::class);
     }
 
     /**
      * @return ICommander
      */
     protected function createCommander() {
-        $commander = new ContainerAwareCommander($this->container);
-        $this->container->set([Commander::class, ICommander::class], $commander);
-
-        return $commander;
+        return new ContainerAwareCommander($this->container);
     }
 
     /**
