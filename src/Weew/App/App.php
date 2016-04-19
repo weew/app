@@ -75,10 +75,6 @@ class App implements IApp {
             $environment = $this->getDefaultEnvironment();
         }
 
-        // config loader must be shared across
-        // reboots / environment switches
-        $this->configLoader = $this->createConfigLoader();
-
         $this->init($environment);
     }
 
@@ -89,8 +85,24 @@ class App implements IApp {
      * @param $environment
      */
     protected function init($environment) {
+        // config loader must be shared across
+        // reboots / environment switches
+        if ( ! $this->configLoader instanceof IConfigLoader) {
+            $this->configLoader = $this->createConfigLoader();
+        }
+
         $this->container = $this->createContainer();
-        $this->kernel = $this->createKernel();
+
+        // create kernel once if app is reinitialized
+        // simply reboot the providers, but keep the old kernel
+        if ( ! $this->kernel instanceof IKernel) {
+            $this->kernel = $this->createKernel();
+        }
+
+        if ($this->started) {
+            $this->shutdown();
+        }
+
         $this->eventer = $this->createEventer();
         $this->commander = $this->createCommander();
         $this->environment = $environment;

@@ -243,6 +243,7 @@ class AppTest extends PHPUnit_Framework_TestCase {
     public function test_it_reboots_after_env_switch() {
         $app = new App('test');
         $app->getContainer()->set('foo', 'bar');
+        $app->start();
         $app->setEnvironment('prod');
         $this->assertFalse($app->getContainer()->has('foo'));
     }
