@@ -41,7 +41,7 @@ class App implements IApp {
     protected $container;
 
     /**
-     * @var IKernel
+     * @var ContainerAwareKernel
      */
     protected $kernel;
 
@@ -98,6 +98,11 @@ class App implements IApp {
         if ( ! $this->kernel instanceof IKernel) {
             $this->kernel = $this->createKernel();
         }
+
+        // replace previous container with the current one;
+        // this is not necessary on the first run, but is needed
+        // after an environment switch or an application reboot
+        $this->kernel->setContainer($this->container);
 
         if ($this->started) {
             $this->shutdown();
@@ -278,7 +283,7 @@ class App implements IApp {
     }
 
     /**
-     * @return IKernel
+     * @return ContainerAwareKernel
      */
     protected function createKernel() {
         $kernel = $this->container->get(ContainerAwareKernel::class);
