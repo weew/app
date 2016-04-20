@@ -202,4 +202,16 @@ class AppTest extends PHPUnit_Framework_TestCase {
         $app->boot();
         $app->boot();
     }
+
+    public function test_environment_is_propagated_to_config() {
+        $app = new App('foo');
+        $app->start();
+        $this->assertEquals('foo', $app->getConfig()->get('env'));
+    }
+
+    public function test_debug_is_propagated_to_config() {
+        $app = new App(null, true);
+        $app->start();
+        $this->assertEquals(true, $app->getConfig()->get('debug'));
+    }
 }

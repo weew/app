@@ -147,6 +147,7 @@ class App implements IApp {
 
         $this->boot();
         $this->config->set('env', $this->getEnvironment());
+        $this->config->set('debug', $this->getDebug());
         $this->kernel->initialize();
         $this->eventer->dispatch(new KernelInitializedEvent($this->kernel));
         $this->kernel->boot();

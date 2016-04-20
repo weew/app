@@ -57,17 +57,20 @@ $app->getConfigLoader()
     ->addRuntimeConfig(['some' => 'value']);
 ```
 
-Be aware that applications current `environment` will always be available inside the config object under the `env` key.
+Be aware that applications current `environment` and `debug` mode will always be available inside the config object.
 
 ```php
-// "prod" by default
+// "dev" by default
 $app->getEnvironment();
-// also prod
-$app->getConfig()->get('env');
-
 $app->setEnvironment('test');
 // will be set to test
 $app->getConfig()->get('env');
+
+// false by default
+$app->getDebug();
+$app->setDebug(true);
+// will be set to true
+$app->getConfig()->get('debug');
 ```
 
 Be aware that config is only available after the application start.
