@@ -2,6 +2,7 @@
 
 namespace Weew\App;
 
+use RuntimeException;
 use Weew\App\Events\AppShutdownEvent;
 use Weew\App\Events\AppStartedEvent;
 use Weew\App\Events\ConfigLoadedEvent;
@@ -28,12 +29,22 @@ class App implements IApp {
     /**
      * @var bool
      */
+    protected $booted = false;
+
+    /**
+     * @var bool
+     */
     protected $started = false;
 
     /**
      * @var string
      */
     protected $environment;
+
+    /**
+     * @var bool
+     */
+    protected $debug;
 
     /**
      * @var IContainer
@@ -69,56 +80,49 @@ class App implements IApp {
      * App constructor.
      *
      * @param string $environment
+     * @param bool $debug
      */
-    public function __construct($environment = null) {
+    public function __construct($environment = null, $debug = null) {
         if ($environment === null) {
             $environment = $this->getDefaultEnvironment();
         }
 
-        $this->init($environment);
+        if ($debug === null) {
+            $debug = $this->getDefaultDebug();
+        }
+
+        $this->setEnvironment($environment);
+        $this->setDebug($debug);
+
+        $this->container = new Container();
+        $this->container->set([App::class, IApp::class], $this);
+
+        $this->kernel = new ContainerAwareKernel($this->container);
+        $this->container->set([Kernel::class, IKernel::class], $this->kernel);
+
+        $this->eventer = new ContainerAwareEventer($this->container);
+        $this->container->set([Eventer::class, IEventer::class], $this->eventer);
+
+        $this->commander = new ContainerAwareCommander($this->container);
+        $this->container->set([Commander::class, ICommander::class], $this->commander);
+
+        $this->configLoader = new ConfigLoader();
     }
 
     /**
-     * This method is needed to be able to
-     * "recreate" application for a given environment.
-     *
-     * @param $environment
+     * Stuff that needs to be done before application starts.
      */
-    protected function init($environment) {
-        // config loader must be shared across
-        // reboots / environment switches
-        if ( ! $this->configLoader instanceof IConfigLoader) {
-            $this->configLoader = $this->createConfigLoader();
+    protected function boot() {
+        if ($this->booted) {
+            return;
         }
 
-        $this->container = $this->createContainer();
+        $this->booted = true;
 
-        // create kernel once if app is reinitialized
-        // simply reboot the providers, but keep the old kernel
-        if ( ! $this->kernel instanceof IKernel) {
-            $this->kernel = $this->createKernel();
-        }
-
-        // replace previous container with the current one;
-        // this is not necessary on the first run, but is needed
-        // after an environment switch or an application reboot
-        $this->kernel->setContainer($this->container);
-        $this->container->set([Kernel::class, IKernel::class], $this->kernel);
-
-        if ($this->started) {
-            $this->shutdown();
-        }
-
-        $this->eventer = $this->createEventer();
-        $this->container->set([Eventer::class, IEventer::class], $this->eventer);
-        $this->commander = $this->createCommander();
-        $this->container->set([Commander::class, ICommander::class], $this->commander);
-        $this->environment = $environment;
-
-        $this->container->set([App::class, IApp::class], $this);
-
-        $this->getConfigLoader()->setEnvironment($environment);
-        $this->initializeConfig();
+        $this->getConfigLoader()->setEnvironment($this->getEnvironment());
+        $this->config = $this->getConfigLoader()->load();
+        $this->container->set([Config::class, IConfig::class], $this->config);
+        $this->eventer->dispatch(new ConfigLoadedEvent($this->config));
     }
 
     /**
@@ -141,6 +145,8 @@ class App implements IApp {
 
         $this->started = true;
 
+        $this->boot();
+        $this->config->set('env', $this->getEnvironment());
         $this->kernel->initialize();
         $this->eventer->dispatch(new KernelInitializedEvent($this->kernel));
         $this->kernel->boot();
@@ -161,44 +167,6 @@ class App implements IApp {
         $this->kernel->shutdown();
         $this->eventer->dispatch(new KernelShutdownEvent($this->kernel));
         $this->eventer->dispatch(new AppShutdownEvent($this));
-    }
-
-    /**
-     * Load config or extend currently loaded config with
-     * new one, based on a config array, IConfig or a config path.
-     *
-     * @param array|string|IConfig $config
-     *
-     * @return IConfig
-     */
-    public function loadConfig($config) {
-        $configLoader = $this->getConfigLoader();
-
-        if (is_array($config)) {
-            // array of paths to config files
-            if (array_is_indexed($config)) {
-                $configLoader->addPaths($config);
-            }
-            // array of key value configs
-            else {
-                $configLoader->addRuntimeConfig($config);
-            }
-        }
-        // path to config file
-        else if (is_string($config)) {
-            $configLoader->addPath($config);
-        }
-        // config object
-        else if ($config instanceof IConfig) {
-            $configLoader->addRuntimeConfig($config);
-        }
-
-        $config = $configLoader->load();
-        $this->config->extend($config);
-
-        $this->eventer->dispatch(new ConfigLoadedEvent($this->config));
-
-        return $this->config;
     }
 
     /**
@@ -239,6 +207,13 @@ class App implements IApp {
      * @return IConfig
      */
     public function getConfig() {
+        if ( ! $this->config instanceof IConfig) {
+            throw new RuntimeException(
+                'Config has not been loaded yet. ' .
+                'Make sure application is started.'
+            );
+        }
+
         return $this->config;
     }
 
@@ -253,10 +228,28 @@ class App implements IApp {
      * @param string $environment
      */
     public function setEnvironment($environment) {
-        if ($this->environment !== $environment) {
-            $this->environment = $environment;
-            $this->init($environment);
+        if ($this->started) {
+            throw new RuntimeException(
+                'Application has already been started ' .
+                'an environment can not be changed.'
+            );
         }
+
+        $this->environment = $environment;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getDebug() {
+        return $this->debug;
+    }
+
+    /**
+     * @param bool $debug
+     */
+    public function setDebug($debug) {
+        $this->debug = $debug;
     }
 
     /**
@@ -279,56 +272,16 @@ class App implements IApp {
     }
 
     /**
-     * @return IContainer
-     */
-    protected function createContainer() {
-        return new Container();
-    }
-
-    /**
-     * @return ContainerAwareKernel
-     */
-    protected function createKernel() {
-        return $this->container->get(ContainerAwareKernel::class);
-    }
-
-    /**
-     * @return IEventer
-     */
-    protected function createEventer() {
-        return $this->container->get(ContainerAwareEventer::class);
-    }
-
-    /**
-     * @return ICommander
-     */
-    protected function createCommander() {
-        return new ContainerAwareCommander($this->container);
-    }
-
-    /**
-     * @return IConfigLoader
-     */
-    protected function createConfigLoader() {
-        return new ConfigLoader();
-    }
-
-    /**
      * @return string
      */
     protected function getDefaultEnvironment() {
-        return 'prod';
+        return 'dev';
     }
 
     /**
-     * Reload configuration. All runtime config changes will be lost.
+     * @return bool
      */
-    protected function initializeConfig() {
-        $this->config = $this->getConfigLoader()->load();
-        // application environment might change during the lifetime,
-        // make sure this change flows back into the config files
-        $this->config->set('env', $this->getConfigLoader()->getEnvironment());
-
-        $this->container->set([Config::class, IConfig::class], $this->config);
+    protected function getDefaultDebug() {
+        return false;
     }
 }

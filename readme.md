@@ -48,23 +48,13 @@ $app->getEventer();
 $app->getCommander();
 ```
 
-There are several helper methods for dealing with configuration.
+You can provide config sources using the config loader.
 
 ```php
 // get config
-$app->getConfig();
-
-// load a config array into the application
-$app->loadConfig(['some' => 'config']);
-
-// load config from filesystem into the application
-$app->loadConfig('path/to/config');
-
-// load from multiple sources on the filesystem into the application
-$app->loadConfig(['path/to/config']);
-
-// load config from IConfig instance into the application
-$app->loadConfig(new Config());
+$app->getConfigLoader()
+    ->addPath('/path/to/config')
+    ->addRuntimeConfig(['some' => 'value']);
 ```
 
 Be aware that applications current `environment` will always be available inside the config object under the `env` key.
@@ -79,6 +69,8 @@ $app->setEnvironment('test');
 // will be set to test
 $app->getConfig()->get('env');
 ```
+
+Be aware that config is only available after the application start.
 
 ## Extensions
 

@@ -62,16 +62,6 @@ interface IApp {
     function getConfigLoader();
 
     /**
-     * Load config or extend currently loaded config with
-     * new one, based on a config array, IConfig or a config path.
-     *
-     * @param array|string|IConfig $config
-     *
-     * @return IConfig
-     */
-    function loadConfig($config);
-
-    /**
      * @return string
      */
     function getEnvironment();
@@ -80,4 +70,14 @@ interface IApp {
      * @param string $environment
      */
     function setEnvironment($environment);
+
+    /**
+     * @return bool
+     */
+    function getDebug();
+
+    /**
+     * @param bool $debug
+     */
+    function setDebug($debug);
 }

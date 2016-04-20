@@ -3,6 +3,8 @@
 namespace Tests\Weew\App;
 
 use PHPUnit_Framework_TestCase;
+use RuntimeException;
+use Tests\Weew\App\Mocks\FakeApp;
 use Weew\App\App;
 use Weew\App\Events\AppShutdownEvent;
 use Weew\App\Events\AppStartedEvent;
@@ -25,14 +27,16 @@ use Weew\Kernel\Kernel;
 class AppTest extends PHPUnit_Framework_TestCase {
     public function test_create() {
         $app = new App();
-        $this->assertEquals('prod', $app->getEnvironment());
+        $this->assertEquals('dev', $app->getEnvironment());
     }
 
     public function test_get_and_set_environment() {
-        $app = new App('test');
-        $this->assertEquals('test', $app->getEnvironment());
+        $app = new App();
+        $this->assertEquals('dev', $app->getEnvironment());
         $app->setEnvironment('dev');
         $this->assertEquals('dev', $app->getEnvironment());
+        $app = new App('test');
+        $this->assertEquals('test', $app->getEnvironment());
     }
 
     public function test_get_container() {
@@ -42,6 +46,7 @@ class AppTest extends PHPUnit_Framework_TestCase {
 
     public function test_get_config() {
         $app = new App();
+        $app->start();
         $config = $app->getConfig();
         $this->assertTrue($config instanceof IConfig);
         $sameConfig = $app->getContainer()->get(IConfig::class);
@@ -83,49 +88,6 @@ class AppTest extends PHPUnit_Framework_TestCase {
         $this->assertTrue($commander === $sameCommander);
     }
 
-    public function test_load_config_from_path() {
-        $app = new App();
-        $config = $app->getConfig();
-        $config->set('key', 'value');
-        $app->loadConfig(__DIR__ . '/config/config1.php');
-        $config = $app->loadConfig([__DIR__ . '/config/config2.php']);
-
-        $this->assertTrue($config instanceof IConfig);
-        $this->assertTrue($config === $app->getConfig());
-        $this->assertTrue($app->getContainer()->get(IConfig::class) === $config);
-        $this->assertEquals(['key' => 'value', 'foo' => 'bar', 'bar' => 'baz', 'env' => 'prod'], $config->toArray());
-    }
-
-    public function test_load_config_from_array_of_paths() {
-        $app = new App();
-        $app->getConfig()->set('key', 'value');
-        $config = $app->loadConfig(__DIR__ . '/config');
-
-        $this->assertTrue($config instanceof IConfig);
-        $this->assertTrue($config === $app->getConfig());
-        $this->assertEquals(['key' => 'value', 'foo' => 'bar', 'bar' => 'baz', 'env' => 'prod'], $config->toArray());
-    }
-
-    public function test_load_config_from_array() {
-        $app = new App();
-        $app->getConfig()->set('key', 'value');
-        $config = $app->loadConfig(['yolo' => 'swag']);
-
-        $this->assertTrue($config instanceof IConfig);
-        $this->assertTrue($config === $app->getConfig());
-        $this->assertEquals(['key' => 'value', 'yolo' => 'swag', 'env' => 'prod'], $config->toArray());
-    }
-
-    public function test_load_config_from_another_config() {
-        $app = new App();
-        $app->getConfig()->set('key', 'value');
-        $config = $app->loadConfig(new Config(['yolo' => 'swag']));
-
-        $this->assertTrue($config instanceof IConfig);
-        $this->assertTrue($config === $app->getConfig());
-        $this->assertEquals(['key' => 'value', 'yolo' => 'swag', 'env' => 'prod'], $config->toArray());
-    }
-
     public function test_start_and_shutdown_events() {
         $app = new App();
 
@@ -139,7 +101,7 @@ class AppTest extends PHPUnit_Framework_TestCase {
             AppShutdownEvent::class,
         ]);
 
-        $app->loadConfig([]);
+        $app->getConfigLoader()->addConfig([]);
         $app->run();
         $tester->assert();
     }
@@ -157,7 +119,7 @@ class AppTest extends PHPUnit_Framework_TestCase {
             AppShutdownEvent::class,
         ]);
 
-        $app->loadConfig([]);
+        $app->getConfigLoader()->addConfig([]);
 
         $app->start();
         $app->start();
@@ -170,45 +132,6 @@ class AppTest extends PHPUnit_Framework_TestCase {
         $tester->assert();
     }
 
-    public function test_switching_environment_get_propagated() {
-        $app = new App();
-        $this->assertEquals('prod', $app->getEnvironment());
-        $this->assertEquals('prod', $app->getConfigLoader()->getEnvironment());
-        $this->assertEquals('prod', $app->getConfig()->get('env'));
-
-        $app->setEnvironment('test');
-
-        $this->assertEquals('test', $app->getEnvironment());
-        $this->assertEquals('test', $app->getConfigLoader()->getEnvironment());
-        $this->assertEquals('test', $app->getConfig()->get('env'));
-    }
-
-    public function test_environment_switch_leads_to_config_reload() {
-        $app = new App('dev');
-        $config = $app->getConfig();
-        $this->assertTrue($config instanceof IConfig);
-        $app->setEnvironment('dev');
-        $this->assertTrue($config === $app->getConfig());
-        $app->setEnvironment('prod');
-        $this->assertTrue($config !== $app->getConfig());
-        $config = $app->getConfig();
-        $this->assertTrue($config instanceof IConfig);
-    }
-
-    public function test_config_reload_reloads_config_sources() {
-        $app = new App();
-        $app->loadConfig(__DIR__ . '/config/config1.php');
-        $app->loadConfig([__DIR__ . '/config/config2.php']);
-        $config = $app->getConfig();
-        $config->set('key', 'value');
-        $this->assertEquals(['key' => 'value', 'foo' => 'bar', 'bar' => 'baz', 'env' => 'prod'], $config->toArray());
-        $app->setEnvironment('dev');
-        $this->assertFalse($config === $app->getConfig());
-        $config = $app->getConfig();
-        $this->assertTrue($app->getContainer()->get(IConfig::class) === $config);
-        $this->assertEquals(['foo' => 'bar', 'bar' => 'baz', 'env' => 'dev'], $config->toArray());
-    }
-
     public function test_it_returns_config_loader() {
         $app = new App();
         $this->assertTrue($app->getConfigLoader() instanceof IConfigLoader);
@@ -216,8 +139,8 @@ class AppTest extends PHPUnit_Framework_TestCase {
 
     public function test_config_loader_has_the_same_environment_as_app() {
         $app = new App();
-        $this->assertEquals($app->getEnvironment(), $app->getConfigLoader()->getEnvironment());
         $app->setEnvironment('env');
+        $app->start();
         $this->assertEquals($app->getEnvironment(), $app->getConfigLoader()->getEnvironment());
     }
 
@@ -240,19 +163,43 @@ class AppTest extends PHPUnit_Framework_TestCase {
         );
     }
 
-    public function test_it_reboots_after_env_switch() {
-        $app = new App('test');
-        $app->getContainer()->set('foo', 'bar');
+    public function test_multiple_start() {
+        $app = new App();
         $app->start();
-        $app->setEnvironment('prod');
-        $this->assertFalse($app->getContainer()->has('foo'));
+        $app->start();
     }
 
-    public function test_kernel_is_available_inside_the_container_after_app_reboot() {
-        $app = new App('test');
-        $kernel = $app->getContainer()->get(IKernel::class);
+    public function test_get_config_before_start_throws_an_error() {
+        $app = new App();
+        $this->setExpectedException(RuntimeException::class);
+        $app->getConfig();
+    }
+
+    public function test_get_config_after_app_start() {
+        $app = new App();
         $app->start();
-        $app->setEnvironment('prod');
-        $this->assertTrue($app->getContainer()->get(IKernel::class) === $kernel);
+        $this->assertTrue($app->getConfig() instanceof IConfig);
+    }
+
+    public function test_get_and_set_debug() {
+        $app = new App();
+        $this->assertFalse($app->getDebug());
+        $app->setDebug(true);
+        $this->assertTrue($app->getDebug());
+        $app = new App(null, true);
+        $this->assertTrue($app->getDebug());
+    }
+
+    public function test_set_environment_after_app_start_throws_an_error() {
+        $app = new App();
+        $app->start();
+        $this->setExpectedException(RuntimeException::class);
+        $app->setEnvironment('test');
+    }
+
+    public function test_boot_multiple_times() {
+        $app = new FakeApp();
+        $app->boot();
+        $app->boot();
     }
 }
