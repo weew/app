@@ -29,11 +29,6 @@ class App implements IApp {
     /**
      * @var bool
      */
-    protected $booted = false;
-
-    /**
-     * @var bool
-     */
     protected $started = false;
 
     /**
@@ -110,22 +105,6 @@ class App implements IApp {
     }
 
     /**
-     * Stuff that needs to be done before application starts.
-     */
-    protected function boot() {
-        if ($this->booted) {
-            return;
-        }
-
-        $this->booted = true;
-
-        $this->getConfigLoader()->setEnvironment($this->getEnvironment());
-        $this->config = $this->getConfigLoader()->load();
-        $this->container->set([Config::class, IConfig::class], $this->config);
-        $this->eventer->dispatch(new ConfigLoadedEvent($this->config));
-    }
-
-    /**
      * Dry run - start and shutdown app.
      * This method is not meant to be used as
      * the main entry point in to the App.
@@ -145,9 +124,13 @@ class App implements IApp {
 
         $this->started = true;
 
-        $this->boot();
+        $this->getConfigLoader()->setEnvironment($this->getEnvironment());
+        $this->config = $this->getConfigLoader()->load();
+        $this->container->set([Config::class, IConfig::class], $this->config);
         $this->config->set('env', $this->getEnvironment());
         $this->config->set('debug', $this->getDebug());
+        $this->eventer->dispatch(new ConfigLoadedEvent($this->config));
+
         $this->kernel->initialize();
         $this->eventer->dispatch(new KernelInitializedEvent($this->kernel));
         $this->kernel->boot();

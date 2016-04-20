@@ -4,7 +4,6 @@ namespace Tests\Weew\App;
 
 use PHPUnit_Framework_TestCase;
 use RuntimeException;
-use Tests\Weew\App\Mocks\FakeApp;
 use Weew\App\App;
 use Weew\App\Events\AppShutdownEvent;
 use Weew\App\Events\AppStartedEvent;
@@ -195,12 +194,6 @@ class AppTest extends PHPUnit_Framework_TestCase {
         $app->start();
         $this->setExpectedException(RuntimeException::class);
         $app->setEnvironment('test');
-    }
-
-    public function test_boot_multiple_times() {
-        $app = new FakeApp();
-        $app->boot();
-        $app->boot();
     }
 
     public function test_environment_is_propagated_to_config() {
