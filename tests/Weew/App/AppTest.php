@@ -182,11 +182,11 @@ class AppTest extends PHPUnit_Framework_TestCase {
 
     public function test_get_and_set_debug() {
         $app = new App();
+        $this->assertTrue($app->getDebug());
+        $app->setDebug(false);
         $this->assertFalse($app->getDebug());
-        $app->setDebug(true);
-        $this->assertTrue($app->getDebug());
-        $app = new App(null, true);
-        $this->assertTrue($app->getDebug());
+        $app = new App(null, false);
+        $this->assertFalse($app->getDebug());
     }
 
     public function test_set_environment_after_app_start_throws_an_error() {

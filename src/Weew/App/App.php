@@ -215,7 +215,7 @@ class App implements IApp {
         if ($this->started) {
             throw new RuntimeException(
                 'Application has already been started ' .
-                'an environment can not be changed.'
+                'and environment can not be changed anymore.'
             );
         }
 
@@ -266,6 +266,6 @@ class App implements IApp {
      * @return bool
      */
     protected function getDefaultDebug() {
-        return false;
+        return true;
     }
 }
