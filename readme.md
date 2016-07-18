@@ -1,10 +1,10 @@
 # App
 
-[![Build Status](https://img.shields.io/travis/weew/php-app.svg)](https://travis-ci.org/weew/php-app)
-[![Code Quality](https://img.shields.io/scrutinizer/g/weew/php-app.svg)](https://scrutinizer-ci.com/g/weew/php-app)
-[![Test Coverage](https://img.shields.io/coveralls/weew/php-app.svg)](https://coveralls.io/github/weew/php-app)
-[![Version](https://img.shields.io/packagist/v/weew/php-app.svg)](https://packagist.org/packages/weew/php-app)
-[![Licence](https://img.shields.io/packagist/l/weew/php-app.svg)](https://packagist.org/packages/weew/php-app)
+[![Build Status](https://img.shields.io/travis/weew/app.svg)](https://travis-ci.org/weew/app)
+[![Code Quality](https://img.shields.io/scrutinizer/g/weew/app.svg)](https://scrutinizer-ci.com/g/weew/app)
+[![Test Coverage](https://img.shields.io/coveralls/weew/app.svg)](https://coveralls.io/github/weew/app)
+[![Version](https://img.shields.io/packagist/v/weew/app.svg)](https://packagist.org/packages/weew/app)
+[![Licence](https://img.shields.io/packagist/l/weew/app.svg)](https://packagist.org/packages/weew/app)
 
 ## Table of contents
 
@@ -15,11 +15,11 @@
 
 ## Installation
 
-`composer require weew/php-app`
+`composer require weew/app`
 
 ## Introduction
 
-This package is meant to be used as a barebone for any php applications. It uses the [weew/php-container](https://github.com/weew/php-container) package for dependency injection, [weew/php-kernel](https://github.com/weew/php-kernel) as a kernel where you can register your providers, the [weew/php-eventer](https://github.com/weew/php-eventer) package for event handing and the [weew/php-commander](https://github.com/weew/php-commander) package as the command bus. Configuration is handled by the [weew/php-config](https://github.com/weew/php-config) package.
+This package is meant to be used as a barebone for any php applications. It uses the [weew/container](https://github.com/weew/container) package for dependency injection, [weew/kernel](https://github.com/weew/kernel) as a kernel where you can register your providers, the [weew/eventer](https://github.com/weew/eventer) package for event handing and the [weew/commander](https://github.com/weew/commander) package as the command bus. Configuration is handled by the [weew/config](https://github.com/weew/config) package.
 
 Please read documentation of different components to see how they work.
 
@@ -79,12 +79,12 @@ Be aware that config is only available after the application start.
 
 There are several extensions available:
 
-- [weew/php-app-doctrine](https://github.com/weew/php-app-doctrine)
-- [weew/php-app-monolog](https://github.com/weew/php-app-monolog)
-- [weew/php-app-twig](https://github.com/weew/php-app-twig)
-- [weew/php-app-http](https://github.com/weew/php-app-http)
-- [weew/php-app-http-request-handler](https://github.com/weew/php-app-http-request-handler)
-- [weew/php-app-error-handler](https://github.com/weew/php-app-error-handler)
-- [weew/php-app-error-handler-bugsnag](https://github.com/weew/php-app-error-handler-bugsnag)
-- [weew/php-app-error-handler-monolog](https://github.com/weew/php-app-error-handler-monolog)
+- [weew/app-doctrine](https://github.com/weew/app-doctrine)
+- [weew/app-monolog](https://github.com/weew/app-monolog)
+- [weew/app-twig](https://github.com/weew/app-twig)
+- [weew/app-http](https://github.com/weew/app-http)
+- [weew/app-http-request-handler](https://github.com/weew/app-http-request-handler)
+- [weew/app-error-handler](https://github.com/weew/app-error-handler)
+- [weew/app-error-handler-bugsnag](https://github.com/weew/app-error-handler-bugsnag)
+- [weew/app-error-handler-monolog](https://github.com/weew/app-error-handler-monolog)
 
